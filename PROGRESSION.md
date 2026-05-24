@@ -15,15 +15,19 @@ Je note ici ce qui a été fait, ce qui bloque, et ce que je fais ensuite.
 
 Mise en place de l'environnement de dev
 
-
+ 
 ### Jour 2
-- [ ] Créer le projet Spring Boot.
-- [ ] Vérifier le démarrage local.
-- [ ] Créer un endpoint de santé.
+- [ X] Créer le projet Spring Boot.
+
+./mvnw spring-boot:run pour build
+
+- [X ] Vérifier le démarrage local.
+- [X ] Créer un endpoint de santé.
+http://localhost:8080/hello - ok
 
 ### Jour 3
-- [ ] Installer PostgreSQL local.
-- [ ] Créer la base MyFin.
+- [X] Installer PostgreSQL local.
+- [X] Créer la base MyFin.
 - [ ] Créer les premières tables.
 
 ### Jour 4
