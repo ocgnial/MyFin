@@ -24,6 +24,18 @@ Fonctionnalités prévues pour la première version :
 
 ## Stack envisagée
 
+VS-code + extensions Github + java
+Perplexity pour les recherches
+Installation Spring Boot via https://start.spring.io/
+Dependences : 
+Spring Web.
+Spring Data JPA.
+PostgreSQL Driver.
+Validation.
+Lombok, si tu veux.
+Spring Boot DevTools, si disponible.
+Maven
+
 - Backend : Java + Spring Boot
 - Base de données : PostgreSQL
 - Frontend : React + TypeScript
@@ -37,6 +49,10 @@ Fonctionnalités prévues pour la première version :
 - Avoir un fichier .env avec le mot de passe de votre BDD
 
 DB_PASSWORD=<Votre mdp ici>
+
+- Demarre le serveur ./mvnw spring-boot:run
+
+- Test de reference ok : http://localhost:8080/hello
 
 ## Architecture
 
