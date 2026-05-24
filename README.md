@@ -34,6 +34,10 @@ Fonctionnalités prévues pour la première version :
 
 À venir.
 
+- Avoir un fichier .env avec le mot de passe de votre BDD
+
+DB_PASSWORD=<Votre mdp ici>
+
 ## Architecture
 
 Voir le fichier `ARCHITECTURE.md`.
