@@ -28,7 +28,9 @@ http://localhost:8080/hello - ok
 ### Jour 3
 - [X] Installer PostgreSQL local.
 - [X] Créer la base MyFin.
-- [ ] Créer les premières tables.
+- [X] Créer les premières tables (Entité Transaction + Repository).
+- [X] Créer le TransactionController pour lister les transactions.
+- [X] Vérifier le fonctionnement de l'API /api/transactions (retourne un tableau vide).
 
 ### Jour 4
 - [ ] Créer l’upload CSV.
@@ -46,9 +48,9 @@ http://localhost:8080/hello - ok
 - [ ] Calculer les dépenses mensuelles.
 
 ### Jour 7
-- [ ] Créer une première page dashboard.
-- [ ] Relier le frontend à l’API.
-- [ ] Faire un point sur la suite.
+- [ ] Créer une première page dashboard (Frontend).
+- [ ] Relier le frontend à l’API (Afficher les transactions).
+- [ ] Faire un point sur la suite (Bilan).
 
 ## Blocages
 
