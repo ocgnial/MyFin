@@ -155,126 +155,121 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] flex font-sans text-slate-900 selection:bg-indigo-100 antialiased">
-      {/* Sidebar - Design fixe et élégant */}
-      <aside className="w-80 bg-white border-r border-slate-200 hidden xl:flex flex-col p-10 sticky top-0 h-screen">
-        <div className="flex items-center gap-4 mb-14">
-          <div className="w-11 h-11 bg-indigo-600 rounded-[14px] flex items-center justify-center text-white shadow-xl shadow-indigo-200">
-            <Wallet size={28} />
+    <div className="min-h-screen bg-[#F1F5F9] flex font-sans text-[#1C2434] antialiased">
+      {/* Sidebar de navigation - Thème Sombre */}
+      <aside className="w-72 bg-[#1C2434] hidden xl:flex flex-col sticky top-0 h-screen overflow-y-auto transition-all">
+        <div className="flex items-center gap-3 p-8 mb-4">
+          <div className="w-9 h-9 bg-[#3C50E0] rounded-lg flex items-center justify-center text-white">
+            <Wallet size={24} />
           </div>
-          <span className="text-2xl font-black tracking-tighter text-slate-900">MyFin.</span>
+          <span className="text-2xl font-bold text-white tracking-tight">MyFin</span>
         </div>
 
-        <nav className="flex-1 space-y-2">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-4">Menu Principal</p>
-          <NavItem icon={<LayoutDashboard size={20} />} label="Tableau de bord" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-          <NavItem icon={<PieChartIcon size={20} />} label="Rapports" active={activeTab === 'analyses'} onClick={() => setActiveTab('analyses')} />
-          <NavItem icon={<Clock size={20} />} label="Historique" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
-          <div className="pt-8">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-4">Compte</p>
-            <NavItem icon={<Settings size={20} />} label="Paramètres" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+        <nav className="flex-1 px-6 space-y-1">
+          <p className="text-xs font-semibold text-[#8A99AF] mb-4 px-3 uppercase tracking-widest">Menu</p>
+          <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} isDark />
+          <NavItem icon={<PieChartIcon size={18} />} label="Analyses" active={activeTab === 'analyses'} onClick={() => setActiveTab('analyses')} isDark />
+          <NavItem icon={<Clock size={18} />} label="Transactions" active={activeTab === 'history'} onClick={() => setActiveTab('history')} isDark />
+          
+          <div className="pt-10">
+            <p className="text-xs font-semibold text-[#8A99AF] mb-4 px-3 uppercase tracking-widest">Support</p>
+            <NavItem icon={<Settings size={18} />} label="Paramètres" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} isDark />
           </div>
         </nav>
 
-        <div className="mt-auto bg-slate-900 rounded-[2.5rem] p-7 text-white shadow-2xl shadow-slate-200">
-          <p className="text-sm font-bold mb-2">Version Pro Active</p>
-          <p className="text-[11px] text-slate-400 mb-5 leading-relaxed">Débloquez l'IA pour catégoriser vos transactions.</p>
-          <button className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-xs font-black transition-all">MISE À JOUR</button>
+        <div className="p-6">
+          <div className="bg-[#24303F] rounded-sm p-4 text-center">
+            <p className="text-white text-xs font-bold mb-3">Besoin de plus d'exports ?</p>
+            <button className="w-full py-2 bg-[#3C50E0] text-white text-xs font-bold rounded-sm hover:bg-opacity-90 transition-all uppercase tracking-tighter">Passer Premium</button>
+          </div>
         </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto p-8 lg:p-14 space-y-12">
-          {/* Header - Contexte utilisateur */}
-          <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">Dashboard.</h1>
-              <p className="text-slate-500 font-medium italic">Bienvenue, Justin. Voici le résumé de votre santé financière.</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="relative hidden sm:block">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input type="text" placeholder="Chercher une dépense..." className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium w-64 outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all" />
+        {/* Top Header Bar */}
+        <header className="bg-white border-b border-slate-200 h-20 flex items-center justify-between px-8 sticky top-0 z-40">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input type="text" placeholder="Type to search..." className="w-full pl-8 pr-4 py-2 text-sm outline-none" />
+          </div>
+          <div className="flex items-center gap-6">
+            <button className="relative text-slate-500">
+              <Bell size={22} />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="flex items-center gap-3 border-l pl-6 border-slate-200">
+              <div className="text-right">
+                <p className="text-sm font-bold leading-none">Justin Doe</p>
+                <p className="text-xs text-slate-500 mt-1">Administrator</p>
               </div>
-              <button className="w-12 h-12 glass-card flex items-center justify-center text-slate-500 relative !rounded-2xl">
-                <Bell size={20} />
-                <span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-              </button>
-              <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black shadow-lg shadow-slate-300">JD</div>
+              <div className="w-11 h-11 rounded-full bg-slate-200 flex items-center justify-center font-bold">JD</div>
             </div>
-          </header>
+          </div>
+        </header>
 
+        <div className="max-w-7xl mx-auto p-8 space-y-8">
           {activeTab === 'dashboard' ? (
             <>
-              {/* Stats Grid - Cartes avec soul */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <StatCard title="Solde Disponible" amount={stats.balance} icon={<Wallet size={20} />} color="indigo" />
-                <StatCard title="Total Crédits" amount={stats.totalCredit} icon={<ArrowUpCircle size={20} />} color="emerald" />
-                <StatCard title="Total Débits" amount={stats.totalDebit} icon={<ArrowDownCircle size={20} />} color="rose" />
+              {/* Top Summary Widgets */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard title="Total Balance" amount={stats.balance} icon={<Wallet size={24} />} color="indigo" />
+                <StatCard title="Total Income" amount={stats.totalCredit} icon={<ArrowUpCircle size={24} />} color="emerald" />
+                <StatCard title="Total Expenses" amount={stats.totalDebit} icon={<ArrowDownCircle size={24} />} color="rose" />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                {/* Chart Section */}
-                <div className="lg:col-span-2 glass-card p-10 min-h-[450px] flex flex-col">
-                  <div className="flex items-center justify-between mb-10">
-                    <h3 className="text-xl font-black flex items-center gap-3">
-                      <TrendingUp className="text-indigo-500" /> Flux de trésorerie
-                    </h3>
-                    <select className="bg-slate-100 border-none rounded-xl px-4 py-2 text-[11px] font-black text-slate-500 outline-none uppercase tracking-widest cursor-pointer">
-                      <option>Derniers 30 jours</option>
-                      <option>Dernier mois</option>
+              <div className="grid grid-cols-12 gap-6">
+                {/* Main Graph Card */}
+                <div className="col-span-12 lg:col-span-8 bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-bold text-[#1C2434]">Cash Flow Overview</h3>
+                    <select className="text-sm font-medium text-slate-500 bg-slate-50 border-none rounded px-3 py-1 outline-none">
+                      <option>Last 30 days</option>
                     </select>
                   </div>
-                  <div className="flex-1">
+                  <div className="h-[320px]">
                     {chartData ? <Line data={chartData} options={chartOptions} /> : <div className="h-full flex items-center justify-center text-slate-300 italic">Données insuffisantes...</div>}
                   </div>
                 </div>
 
-                {/* Right Column: Actions & Category Breakdown */}
-                <div className="space-y-6">
+                {/* Right Sidebar Components */}
+                <div className="col-span-12 lg:col-span-4 space-y-6">
                   <FileUpload onImportSuccess={() => setRefreshKey(k => k + 1)} />
-                  <div className="glass-card p-8 space-y-6 !rounded-[2.5rem]">
-                    <h3 className="font-black text-slate-800 flex items-center gap-2">Analyse par catégorie</h3>
-                    <CategoryMiniProgress label="Habitation" percent={42} color="bg-indigo-500" />
-                    <CategoryMiniProgress label="Alimentation" percent={28} color="bg-emerald-500" />
-                    <CategoryMiniProgress label="Loisirs" percent={15} color="bg-rose-500" />
-                    <button className="w-full py-4 text-xs font-black text-indigo-600 bg-indigo-50 rounded-2xl hover:bg-indigo-100 transition-colors uppercase tracking-widest">Voir le détail</button>
+                  <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
+                    <h3 className="font-bold text-[#1C2434] mb-6">Spending Analysis</h3>
+                    <div className="space-y-6">
+                      <CategoryMiniProgress label="Housing" percent={42} color="bg-[#3C50E0]" />
+                      <CategoryMiniProgress label="Food & Drinks" percent={28} color="bg-[#10B981]" />
+                      <CategoryMiniProgress label="Entertainment" percent={15} color="bg-[#F87171]" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Transactions Table - Clean & High density */}
-              <div className="glass-card overflow-hidden">
-                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-xl font-black text-slate-800 tracking-tight">Dernières opérations</h3>
-                  <button className="px-6 py-3 bg-slate-100 rounded-2xl text-[11px] font-black text-slate-500 hover:bg-slate-200 transition-all flex items-center gap-2 uppercase tracking-widest">
+              {/* List of operations */}
+              <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-[#1C2434]">Recent Transactions</h3>
+                  <button className="px-4 py-2 bg-slate-100 rounded text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all flex items-center gap-2 uppercase">
                     <ListFilter size={16} /> Filtrer
                   </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-slate-50/40 border-b border-slate-100">
-                      <tr className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">
-                        <th className="px-10 py-5">Désignation</th>
-                        <th className="px-10 py-5">Date</th>
-                        <th className="px-10 py-5 text-right">Montant</th>
+                    <thead>
+                      <tr>
+                        <th className="table-header">Description</th>
+                        <th className="table-header">Date</th>
+                        <th className="table-header text-right">Amount</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody className="divide-y divide-slate-100">
                       {recent.map((t) => (
-                        <tr key={t.id} className="group hover:bg-slate-50/60 transition-colors">
-                          <td className="px-10 py-6">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${t.direction === 'DEBIT' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-600'}`}>
-                                {t.direction === 'DEBIT' ? <ArrowDownCircle size={18} /> : <ArrowUpCircle size={18} />}
-                              </div>
-                              <span className="font-bold text-slate-700 tracking-tight">{t.rawLabel}</span>
-                            </div>
-                          </td>
-                          <td className="px-10 py-6 text-slate-400 font-bold text-sm">
+                        <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="table-cell font-medium text-[#1C2434]">{t.rawLabel}</td>
+                          <td className="table-cell text-xs font-semibold">
                             {new Date(t.operationDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                           </td>
-                          <td className={`px-10 py-6 text-right font-black text-lg ${t.direction === 'DEBIT' ? 'text-slate-900' : 'text-emerald-600'}`}>
+                          <td className={`table-cell text-right font-bold ${t.direction === 'DEBIT' ? 'text-[#F87171]' : 'text-[#10B981]'}`}>
                             {t.direction === 'DEBIT' ? '-' : '+'}{(t.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                           </td>
                         </tr>
@@ -312,10 +307,10 @@ function CategoryMiniProgress({ label, percent, color }) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
-        <span className="text-slate-400">{label}</span>
-        <span>{percent}%</span>
+        <span className="text-[#637381]">{label}</span>
+        <span className="text-[#1C2434]">{percent}%</span>
       </div>
-      <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-2 w-full bg-[#F1F5F9] rounded-sm overflow-hidden">
         <div className={`h-full ${color} rounded-full`} style={{ width: `${percent}%` }}></div>
       </div>
     </div>
@@ -323,22 +318,15 @@ function CategoryMiniProgress({ label, percent, color }) {
 }
 
 function StatCard({ title, amount, icon, color }) {
-  const colorConfig = {
-    indigo: { text: 'text-indigo-600', bg: 'bg-indigo-50' },
-    emerald: { text: 'text-emerald-600', bg: 'bg-emerald-50' },
-    rose: { text: 'text-rose-600', bg: 'bg-rose-50' }
-  };
-
   return (
-    <div className="glass-card p-8 rounded-[2.5rem] relative overflow-hidden group">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${colorConfig[color].bg} ${colorConfig[color].text}`}>
+    <div className="bg-white border border-slate-200 p-6 shadow-sm flex items-center gap-5 rounded-sm">
+      <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#F1F5F9] text-[#3C50E0]">
         {icon}
       </div>
-      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{title}</p>
-      <h4 className="text-3xl font-black text-slate-900 tracking-tight group-hover:scale-105 transition-transform duration-300 origin-left">
-        {amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-      </h4>
-      <div className={`absolute bottom-0 right-0 w-24 h-24 -mr-8 -mb-8 rounded-full opacity-5 ${colorConfig[color].text} bg-current`}></div>
+      <div>
+        <h4 className="text-2xl font-bold text-[#1C2434] leading-none mb-1">{amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</h4>
+        <p className="text-xs font-semibold text-[#637381] uppercase tracking-wider">{title}</p>
+      </div>
     </div>
   );
 }
