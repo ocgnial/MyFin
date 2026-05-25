@@ -1,5 +1,6 @@
 HELP.md
 HISTORIQUE.md
+ficTest.xlsx
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

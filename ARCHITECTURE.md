@@ -2,14 +2,14 @@
 
 ## But
 
-L’application MyFin permet d’importer un fichier CSV bancaire, de traiter les opérations, de les stocker en base de données, puis d’afficher un dashboard de dépenses.
+L’application MyFin permet d’importer un fichier Excel (.xlsx) bancaire, de traiter les opérations, de les stocker en base de données, puis d’afficher un dashboard de dépenses.
 
 ## Flux global
 
-1. L’utilisateur charge un fichier CSV.
+1. L’utilisateur charge un fichier Excel.
 2. Le backend reçoit le fichier.
 3. Le backend valide le format du fichier.
-4. Le backend extrait les lignes du CSV.
+4. Le backend extrait les données via Apache POI.
 5. Les transactions sont normalisées.
 6. Les transactions sont enregistrées en base.
 7. Un moteur simple de catégorisation associe une catégorie à chaque transaction.
@@ -20,7 +20,7 @@ L’application MyFin permet d’importer un fichier CSV bancaire, de traiter le
 
 ### Frontend
 - Interface web en React.
-- Page d’import CSV.
+- Page d’import Excel.
 - Page dashboard.
 - Affichage des stats principales.
 
@@ -42,7 +42,7 @@ L’application MyFin permet d’importer un fichier CSV bancaire, de traiter le
 ## Tables minimales
 
 ### transactions
-Contient chaque opération importée depuis le CSV.
+Contient chaque opération importée depuis Excel.
 
 Champs possibles :
 - id
@@ -62,7 +62,7 @@ Champs possibles :
 - color
 
 ### import_batches
-Contient l’historique des imports CSV.
+Contient l’historique des imports Excel.
 
 Champs possibles :
 - id
@@ -93,7 +93,7 @@ Champs possibles :
 ## Évolution prévue
 
 Version 1 :
-- import CSV ;
+- import Excel (.xlsx) ;
 - catégorisation simple par règles ;
 - dashboard de dépenses ;
 - stockage en base ;

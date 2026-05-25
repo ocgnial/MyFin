@@ -33,14 +33,14 @@ http://localhost:8080/hello - ok
 - [X] Vérifier le fonctionnement de l'API /api/transactions (retourne un tableau vide).
 
 ### Jour 4
-- [ ] Créer l’upload CSV.
-- [ ] Lire un fichier CSV.
-- [ ] Afficher le nombre de lignes lues.
+- [X] Créer l’upload Excel (Endpoint POST /import).
+- [X] Lire un fichier .xlsx (Service Apache POI).
+- [X] Retourner le nombre de transactions importées.
 
 ### Jour 5
-- [ ] Enregistrer les transactions en base.
-- [ ] Gérer les erreurs de format.
-- [ ] Vérifier l’import complet.
+- [X] Enregistrer les transactions en base (Repository.saveAll).
+- [X] Gérer les erreurs de format (Flexibilité CellType).
+- [X] Vérifier l’import complet.
 
 ### Jour 6
 - [ ] Créer les premières statistiques.
@@ -48,8 +48,8 @@ http://localhost:8080/hello - ok
 - [ ] Calculer les dépenses mensuelles.
 
 ### Jour 7
-- [ ] Créer une première page dashboard (Frontend).
-- [ ] Relier le frontend à l’API (Afficher les transactions).
+- [X] Créer une première page dashboard (Frontend).
+- [X] Relier le frontend à l’API (Afficher les transactions).
 - [ ] Faire un point sur la suite (Bilan).
 
 ## Blocages
@@ -59,7 +59,7 @@ http://localhost:8080/hello - ok
 ## Décisions prises
 
 - Projet mono-utilisateur.
-- Première version uniquement basée sur CSV.
+- Première version uniquement basée sur Excel (.xlsx).
 - Stack de départ : Java, Spring Boot, PostgreSQL, React.
 - Développement local sans hébergement.
 

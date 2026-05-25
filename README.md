@@ -51,6 +51,10 @@ Maven
 DB_PASSWORD=<Votre mdp ici>
 
 - Demarre le serveur ./mvnw spring-boot:run
+./mvnw clean spring-boot:run pour clean
+
+- Depuis le repertoire ./frontend/ 
+npm run dev
 
 - Test de reference ok : http://localhost:8080/hello
 
