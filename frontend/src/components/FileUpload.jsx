@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Upload, FileCheck, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
@@ -21,7 +21,13 @@ export default function FileUpload({ onImportSuccess }) {
       onImportSuccess();
       event.target.value = ''; // Reset input
     } catch (err) {
-      setError("Erreur lors de l'importation. Vérifiez le format du fichier.");
+      // On récupère le message d'erreur explicite du backend
+      const serverMessage = err.response?.data?.message || err.response?.data;
+      const defaultMessage = err.response?.status === 409 
+        ? "Ce fichier a déjà été importé." 
+        : "Erreur lors de l'importation. Vérifiez le format du fichier.";
+      
+      setError(serverMessage || defaultMessage);
     } finally {
       setUploading(false);
     }

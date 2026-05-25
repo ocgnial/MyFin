@@ -45,24 +45,35 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    const fetchData = async () => {
+    let ignore = false;
+
+    async function startFetching() {
       try {
         const [resAll, resRecent] = await Promise.all([
           axios.get('http://localhost:8080/api/transactions'),
           axios.get('http://localhost:8080/api/transactions/recent')
         ]);
-        setTransactions(resAll.data || []);
-        setRecent(resRecent.data || []);
+        
+        if (!ignore) {
+          setTransactions(resAll.data || []);
+          setRecent(resRecent.data || []);
+        }
       } catch (err) {
         console.error("Erreur lors de la récupération des données", err);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
+    }
+
+    startFetching();
+
+    return () => {
+      ignore = true;
     };
-    fetchData();
-  }, []);
+  }, [refreshKey]);
 
   // Calculs mémorisés pour éviter les re-rendus inutiles et sécuriser les valeurs
   const stats = useMemo(() => {
@@ -91,8 +102,8 @@ export default function Dashboard() {
     let currentBalance = 0;
     const dataPoints = sorted.map(t => {
       const amount = Number(t.amount || 0);
-      const change = t.direction === 'CREDIT' ? amount : -amount;
-      currentBalance += change;
+      const diff = t.direction === 'CREDIT' ? amount : -amount;
+      currentBalance += diff;
       return {
         x: new Date(t.operationDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
         y: currentBalance
@@ -144,77 +155,72 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
-      {/* Sidebar de Gauche */}
-      <aside className="w-72 bg-white border-r border-slate-200 hidden xl:flex flex-col p-8 sticky top-0 h-screen">
-        <div className="flex items-center gap-4 mb-12 px-2">
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+    <div className="min-h-screen bg-[#F1F5F9] flex font-sans text-slate-900 selection:bg-indigo-100 antialiased">
+      {/* Sidebar - Design fixe et élégant */}
+      <aside className="w-80 bg-white border-r border-slate-200 hidden xl:flex flex-col p-10 sticky top-0 h-screen">
+        <div className="flex items-center gap-4 mb-14">
+          <div className="w-11 h-11 bg-indigo-600 rounded-[14px] flex items-center justify-center text-white shadow-xl shadow-indigo-200">
             <Wallet size={28} />
           </div>
-          <span className="text-2xl font-black tracking-tight text-slate-800">MyFin</span>
+          <span className="text-2xl font-black tracking-tighter text-slate-900">MyFin.</span>
         </div>
 
-        <nav className="flex-1 space-y-3">
-          <NavItem icon={<LayoutDashboard size={22} />} label="Vue d'ensemble" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-          <NavItem icon={<PieChartIcon size={22} />} label="Analyses" active={activeTab === 'analyses'} onClick={() => setActiveTab('analyses')} />
-          <NavItem icon={<Clock size={22} />} label="Transactions" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
-          <NavItem icon={<Settings size={22} />} label="Configuration" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+        <nav className="flex-1 space-y-2">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-4">Menu Principal</p>
+          <NavItem icon={<LayoutDashboard size={20} />} label="Tableau de bord" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+          <NavItem icon={<PieChartIcon size={20} />} label="Rapports" active={activeTab === 'analyses'} onClick={() => setActiveTab('analyses')} />
+          <NavItem icon={<Clock size={20} />} label="Historique" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+          <div className="pt-8">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-4">Compte</p>
+            <NavItem icon={<Settings size={20} />} label="Paramètres" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+          </div>
         </nav>
 
-        <div className="mt-auto bg-indigo-50 rounded-3xl p-6">
-          <p className="text-sm font-bold text-indigo-900 mb-2">Besoin d'aide ?</p>
-          <p className="text-xs text-indigo-700/70 mb-4">Consultez notre guide d'importation Excel.</p>
-          <button className="w-full py-3 bg-white text-indigo-600 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all">Support</button>
+        <div className="mt-auto bg-slate-900 rounded-[2.5rem] p-7 text-white shadow-2xl shadow-slate-200">
+          <p className="text-sm font-bold mb-2">Version Pro Active</p>
+          <p className="text-[11px] text-slate-400 mb-5 leading-relaxed">Débloquez l'IA pour catégoriser vos transactions.</p>
+          <button className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-xs font-black transition-all">MISE À JOUR</button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-6 lg:p-12">
-          
-          {/* Barre de Recherche et Profil */}
-          <header className="flex items-center justify-between mb-12">
-            <div className="relative w-96 hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="Rechercher..." className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+        <div className="max-w-7xl mx-auto p-8 lg:p-14 space-y-12">
+          {/* Header - Contexte utilisateur */}
+          <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">Dashboard.</h1>
+              <p className="text-slate-500 font-medium italic">Bienvenue, Justin. Voici le résumé de votre santé financière.</p>
             </div>
             <div className="flex items-center gap-4">
-              <button className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-500 relative">
-                <Bell size={22} />
-                <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
-              </button>
-              <div className="flex items-center gap-3 pl-2 border-l border-slate-200 ml-2">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-slate-800 leading-none">Justin D.</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Utilisateur Pro</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-100 flex items-center justify-center text-white font-black">JD</div>
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                <input type="text" placeholder="Chercher une dépense..." className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium w-64 outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all" />
               </div>
+              <button className="w-12 h-12 glass-card flex items-center justify-center text-slate-500 relative !rounded-2xl">
+                <Bell size={20} />
+                <span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+              </button>
+              <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black shadow-lg shadow-slate-300">JD</div>
             </div>
           </header>
 
           {activeTab === 'dashboard' ? (
             <>
-              {/* Section Header */}
-              <div className="mb-10">
-                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Bonjour, Justin 👋</h1>
-                <p className="text-slate-400 text-lg font-medium">Voici ce qu'il s'est passé avec votre argent aujourd'hui.</p>
+              {/* Stats Grid - Cartes avec soul */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <StatCard title="Solde Disponible" amount={stats.balance} icon={<Wallet size={20} />} color="indigo" />
+                <StatCard title="Total Crédits" amount={stats.totalCredit} icon={<ArrowUpCircle size={20} />} color="emerald" />
+                <StatCard title="Total Débits" amount={stats.totalDebit} icon={<ArrowDownCircle size={20} />} color="rose" />
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <StatCard title="Solde Total" amount={stats.balance} icon={<Wallet size={24} />} color="indigo" />
-                <StatCard title="Revenus Mensuels" amount={stats.totalCredit} icon={<ArrowUpCircle size={24} />} color="emerald" />
-                <StatCard title="Dépenses Mensuelles" amount={stats.totalDebit} icon={<ArrowDownCircle size={24} />} color="rose" />
-              </div>
-
-              {/* Graphique & Import */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-                <div className="lg:col-span-2 glass-card rounded-[2.5rem] p-8 min-h-[400px] flex flex-col">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                {/* Chart Section */}
+                <div className="lg:col-span-2 glass-card p-10 min-h-[450px] flex flex-col">
+                  <div className="flex items-center justify-between mb-10">
+                    <h3 className="text-xl font-black flex items-center gap-3">
                       <TrendingUp className="text-indigo-500" /> Flux de trésorerie
                     </h3>
-                    <select className="bg-slate-50 border-none rounded-xl px-4 py-2 text-sm font-bold text-slate-600 outline-none">
+                    <select className="bg-slate-100 border-none rounded-xl px-4 py-2 text-[11px] font-black text-slate-500 outline-none uppercase tracking-widest cursor-pointer">
                       <option>Derniers 30 jours</option>
                       <option>Dernier mois</option>
                     </select>
@@ -224,55 +230,52 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* Right Column: Actions & Category Breakdown */}
                 <div className="space-y-6">
-                  <FileUpload onImportSuccess={() => window.location.reload()} />
-                  <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl">
-                    <div className="flex justify-between items-start mb-8">
-                      <h3 className="text-lg font-bold">Répartition Flash</h3>
-                      <MoreHorizontal className="text-slate-500 cursor-pointer" />
-                    </div>
-                    <div className="space-y-5">
-                      <CategoryMiniProgress label="Logement" percent={45} color="bg-indigo-400" />
-                      <CategoryMiniProgress label="Alimentation" percent={22} color="bg-emerald-400" />
-                      <CategoryMiniProgress label="Loisirs" percent={12} color="bg-amber-400" />
-                    </div>
+                  <FileUpload onImportSuccess={() => setRefreshKey(k => k + 1)} />
+                  <div className="glass-card p-8 space-y-6 !rounded-[2.5rem]">
+                    <h3 className="font-black text-slate-800 flex items-center gap-2">Analyse par catégorie</h3>
+                    <CategoryMiniProgress label="Habitation" percent={42} color="bg-indigo-500" />
+                    <CategoryMiniProgress label="Alimentation" percent={28} color="bg-emerald-500" />
+                    <CategoryMiniProgress label="Loisirs" percent={15} color="bg-rose-500" />
+                    <button className="w-full py-4 text-xs font-black text-indigo-600 bg-indigo-50 rounded-2xl hover:bg-indigo-100 transition-colors uppercase tracking-widest">Voir le détail</button>
                   </div>
                 </div>
               </div>
 
-              {/* Liste des transactions */}
-              <div className="glass-card rounded-[2.5rem] overflow-hidden">
-                <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-                  <h3 className="text-xl font-black text-slate-800">Opérations récentes</h3>
-                  <button className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2">
+              {/* Transactions Table - Clean & High density */}
+              <div className="glass-card overflow-hidden">
+                <div className="p-10 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight">Dernières opérations</h3>
+                  <button className="px-6 py-3 bg-slate-100 rounded-2xl text-[11px] font-black text-slate-500 hover:bg-slate-200 transition-all flex items-center gap-2 uppercase tracking-widest">
                     <ListFilter size={16} /> Filtrer
                   </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-slate-50/50 border-b border-slate-100">
+                    <thead className="bg-slate-50/40 border-b border-slate-100">
                       <tr className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">
-                        <th className="px-8 py-5">Détails de la transaction</th>
-                        <th className="px-8 py-5">Date</th>
-                        <th className="px-8 py-5 text-right">Montant</th>
+                        <th className="px-10 py-5">Désignation</th>
+                        <th className="px-10 py-5">Date</th>
+                        <th className="px-10 py-5 text-right">Montant</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-50">
                       {recent.map((t) => (
-                        <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors">
-                          <td className="px-8 py-6">
+                        <tr key={t.id} className="group hover:bg-slate-50/60 transition-colors">
+                          <td className="px-10 py-6">
                             <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.direction === 'DEBIT' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-600'}`}>
-                                {t.direction === 'DEBIT' ? <ArrowDownCircle size={20} /> : <ArrowUpCircle size={20} />}
+                              <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${t.direction === 'DEBIT' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-600'}`}>
+                                {t.direction === 'DEBIT' ? <ArrowDownCircle size={18} /> : <ArrowUpCircle size={18} />}
                               </div>
-                              <span className="font-bold text-slate-700">{t.rawLabel}</span>
+                              <span className="font-bold text-slate-700 tracking-tight">{t.rawLabel}</span>
                             </div>
                           </td>
-                          <td className="px-8 py-6 text-slate-400 font-semibold text-sm">
+                          <td className="px-10 py-6 text-slate-400 font-bold text-sm">
                             {new Date(t.operationDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                           </td>
-                          <td className={`px-8 py-6 text-right font-black text-xl ${t.direction === 'DEBIT' ? 'text-slate-900' : 'text-emerald-500'}`}>
-                            {t.direction === 'DEBIT' ? '-' : '+'}{t.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                          <td className={`px-10 py-6 text-right font-black text-lg ${t.direction === 'DEBIT' ? 'text-slate-900' : 'text-emerald-600'}`}>
+                            {t.direction === 'DEBIT' ? '-' : '+'}{(t.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                           </td>
                         </tr>
                       ))}

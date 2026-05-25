@@ -10,8 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+//import java.time.LocalDateTime;
 import java.time.ZoneId;
-//import java.time.LocalDate;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +31,16 @@ public class ExcelImportService {
 
         try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
             Sheet sheet = workbook.getSheetAt(0);
+            
+            // Création des styles pour colorier les lignes
+            CellStyle successStyle = workbook.createCellStyle();
+            successStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+            successStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle duplicateStyle = workbook.createCellStyle();
+            duplicateStyle.setFillForegroundColor(IndexedColors.LIGHT_ORANGE.getIndex());
+            duplicateStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
             Iterator<Row> rows = sheet.iterator();
 
             int dateCol = -1, labelCol = -1, debitCol = -1, creditCol = -1;
@@ -56,12 +67,11 @@ public class ExcelImportService {
 
                 // 2. Importation des données
                 try {
-                    Transaction transaction = new Transaction();
-
                     // Date
                     Cell dateCell = currentRow.getCell(dateCol);
+                    LocalDate opDate;
                     if (dateCell != null && DateUtil.isCellDateFormatted(dateCell)) {
-                        transaction.setOperationDate(dateCell.getDateCellValue().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+                        opDate = dateCell.getDateCellValue().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
                     } else {
                         continue; 
                     }
@@ -70,26 +80,38 @@ public class ExcelImportService {
                     Cell labelCell = currentRow.getCell(labelCol);
                     String label = getSafeStringValue(labelCell);
                     if (label.isEmpty()) label = "SANS LIBELLE";
-                    transaction.setRawLabel(label);
-                    transaction.setCleanLabel(label);
 
                     // Montant (Gestion Débit / Crédit)
                     double debit = (debitCol != -1) ? getSafeNumericValue(currentRow.getCell(debitCol)) : 0.0;
                     double credit = (creditCol != -1) ? getSafeNumericValue(currentRow.getCell(creditCol)) : 0.0;
 
+                    BigDecimal amount;
+                    TransactionDirection direction;
                     if (credit != 0) {
-                        transaction.setAmount(BigDecimal.valueOf(Math.abs(credit)));
-                        transaction.setDirection(TransactionDirection.CREDIT);
+                        amount = BigDecimal.valueOf(Math.abs(credit));
+                        direction = TransactionDirection.CREDIT;
                     } else {
-                        transaction.setAmount(BigDecimal.valueOf(Math.abs(debit)));
-                        transaction.setDirection(TransactionDirection.DEBIT);
+                        amount = BigDecimal.valueOf(Math.abs(debit));
+                        direction = TransactionDirection.DEBIT;
                     }
 
-                    // Note: La catégorie reste vide pour l'instant ou gérée via une colonne spécifique si présente
-
-                    transaction.setSourceFile(file.getOriginalFilename());
-                    transactions.add(transaction);
-
+                    // Vérification granulaire du doublon en base de données
+                    if (transactionRepository.existsByOperationDateAndRawLabelAndAmountAndDirection(opDate, label, amount, direction)) {
+                        // La transaction existe déjà : on marque la ligne comme "Non importée"
+                        applyStyleToRow(currentRow, duplicateStyle);
+                    } else {
+                        // Nouvelle transaction : on prépare l'import et on marque comme "Importée"
+                        Transaction transaction = new Transaction();
+                        transaction.setOperationDate(opDate);
+                        transaction.setRawLabel(label);
+                        transaction.setCleanLabel(label);
+                        transaction.setAmount(amount);
+                        transaction.setDirection(direction);
+                        transaction.setSourceFile(file.getOriginalFilename());
+                        
+                        applyStyleToRow(currentRow, successStyle);
+                        transactions.add(transaction);
+                    }
                 } catch (Exception e) {
                     throw new Exception("Erreur à la ligne " + (currentRow.getRowNum() + 1) + " : " + e.getMessage());
                 }
@@ -97,6 +119,12 @@ public class ExcelImportService {
         }
 
         return transactionRepository.saveAll(transactions);
+    }
+
+    private void applyStyleToRow(Row row, CellStyle style) {
+        for (Cell cell : row) {
+            cell.setCellStyle(style);
+        }
     }
 
     private String getSafeStringValue(Cell cell) {
