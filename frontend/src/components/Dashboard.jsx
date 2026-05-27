@@ -1,18 +1,16 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { 
-  Wallet, 
-  ArrowUpCircle, 
-  ArrowDownCircle, 
-  Clock, 
-  ListFilter, 
-  LayoutDashboard, 
-  PieChart as PieChartIcon, 
-  Settings, 
-  Bell, 
-  Search, 
-  TrendingUp, 
-  MoreHorizontal 
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  CalendarDays,
+  CircleDollarSign,
+  FileSpreadsheet,
+  Search,
+  SlidersHorizontal,
+  Tags,
+  TrendingUp,
+  Wallet,
 } from 'lucide-react';
 import FileUpload from './FileUpload';
 
@@ -42,84 +40,96 @@ ChartJS.register(
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
-  const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [error, setError] = useState(null);
+  const [query, setQuery] = useState('');
+  const [directionFilter, setDirectionFilter] = useState('ALL');
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let ignore = false;
 
-    async function startFetching() {
+    async function fetchTransactions() {
+      setError(null);
+
       try {
-        const [resAll, resRecent] = await Promise.all([
-          axios.get('http://localhost:8080/api/transactions'),
-          axios.get('http://localhost:8080/api/transactions/recent')
-        ]);
-        
+        const response = await axios.get('http://localhost:8080/api/transactions');
+
         if (!ignore) {
-          setTransactions(resAll.data || []);
-          setRecent(resRecent.data || []);
+          setTransactions(response.data || []);
         }
       } catch (err) {
-        console.error("Erreur lors de la récupération des données", err);
+        console.warn('Transactions indisponibles', err);
+
+        if (!ignore) {
+          setError('Impossible de charger les transactions. Verifiez que le backend est demarre.');
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
     }
 
-    startFetching();
+    fetchTransactions();
 
     return () => {
       ignore = true;
     };
   }, [refreshKey]);
 
-  // Calculs mémorisés pour éviter les re-rendus inutiles et sécuriser les valeurs
   const stats = useMemo(() => {
-    const debit = transactions
-      .filter(t => t.direction === 'DEBIT')
-      .reduce((acc, t) => acc + Number(t.amount || 0), 0);
-    
-    const credit = transactions
+    const debitTransactions = transactions.filter(t => t.direction === 'DEBIT');
+    const totalDebit = debitTransactions.reduce((acc, t) => acc + Number(t.amount || 0), 0);
+    const totalCredit = transactions
       .filter(t => t.direction === 'CREDIT')
       .reduce((acc, t) => acc + Number(t.amount || 0), 0);
 
+    const dates = transactions
+      .map(t => t.operationDate)
+      .filter(Boolean)
+      .sort((a, b) => new Date(a) - new Date(b));
+
     return {
-      totalDebit: debit,
-      totalCredit: credit,
-      balance: credit - debit
+      totalDebit,
+      totalCredit,
+      balance: totalCredit - totalDebit,
+      count: transactions.length,
+      firstDate: dates[0],
+      lastDate: dates[dates.length - 1],
+      averageDebit: debitTransactions.length ? totalDebit / debitTransactions.length : 0,
     };
   }, [transactions]);
 
   const chartData = useMemo(() => {
     if (transactions.length === 0) return null;
 
-    const sorted = [...transactions].sort((a, b) => 
+    const sorted = [...transactions].sort((a, b) =>
       new Date(a.operationDate) - new Date(b.operationDate)
     );
 
     let currentBalance = 0;
-    const dataPoints = sorted.map(t => {
-      const amount = Number(t.amount || 0);
-      const diff = t.direction === 'CREDIT' ? amount : -amount;
-      currentBalance += diff;
+    const dataPoints = sorted.map(transaction => {
+      const amount = Number(transaction.amount || 0);
+      currentBalance += transaction.direction === 'CREDIT' ? amount : -amount;
+
       return {
-        x: new Date(t.operationDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
-        y: currentBalance
+        x: new Date(transaction.operationDate).toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: 'short',
+        }),
+        y: currentBalance,
       };
     });
 
     return {
-      labels: dataPoints.map(d => d.x),
+      labels: dataPoints.map(point => point.x),
       datasets: [
         {
           fill: true,
-          label: 'Solde (€)',
-          data: dataPoints.map(d => d.y),
-          borderColor: 'rgb(79, 70, 229)',
-          backgroundColor: 'rgba(79, 70, 229, 0.1)',
-          tension: 0.4,
+          label: 'Solde estime',
+          data: dataPoints.map(point => point.y),
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.09)',
+          tension: 0.35,
           pointRadius: 0,
           pointHitRadius: 10,
         },
@@ -132,201 +142,347 @@ export default function Dashboard() {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { mode: 'index', intersect: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: context => formatCurrency(context.parsed.y),
+        },
+      },
     },
     scales: {
-      x: { display: false },
-      y: { 
-        ticks: { callback: (value) => value + ' €' },
-        grid: { color: '#f1f5f9' }
-      }
-    }
+      x: {
+        grid: { display: false },
+        ticks: { color: '#64748b', maxTicksLimit: 6 },
+      },
+      y: {
+        ticks: {
+          color: '#64748b',
+          callback: value => formatCompactCurrency(value),
+        },
+        grid: { color: '#e2e8f0' },
+      },
+    },
   };
+
+  const categoryBreakdown = useMemo(() => {
+    const totals = transactions
+      .filter(t => t.direction === 'DEBIT')
+      .reduce((acc, transaction) => {
+        const category = transaction.category || 'Non categorise';
+        acc[category] = (acc[category] || 0) + Number(transaction.amount || 0);
+        return acc;
+      }, {});
+
+    return Object.entries(totals)
+      .map(([label, amount]) => ({
+        label,
+        amount,
+        percent: stats.totalDebit ? Math.round((amount / stats.totalDebit) * 100) : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+  }, [transactions, stats.totalDebit]);
+
+  const filteredTransactions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return transactions
+      .filter(t => directionFilter === 'ALL' || t.direction === directionFilter)
+      .filter(t => {
+        if (!normalizedQuery) return true;
+        return `${t.rawLabel || ''} ${t.cleanLabel || ''} ${t.category || ''}`
+          .toLowerCase()
+          .includes(normalizedQuery);
+      })
+      .sort((a, b) => new Date(b.operationDate) - new Date(a.operationDate));
+  }, [transactions, query, directionFilter]);
 
   if (loading && transactions.length === 0) {
     return (
-      <div className="fixed inset-0 bg-slate-50 flex items-center justify-center z-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-indigo-600 font-bold tracking-tight">Initialisation de MyFin...</p>
+      <div className="loading-screen">
+        <div className="loading-box">
+          <div className="spinner" />
+          <p>Chargement de MyFin...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] flex font-sans text-[#1C2434] antialiased">
-      {/* Sidebar de navigation - Thème Sombre */}
-      <aside className="w-72 bg-[#1C2434] hidden xl:flex flex-col sticky top-0 h-screen overflow-y-auto transition-all">
-        <div className="flex items-center gap-3 p-8 mb-4">
-          <div className="w-9 h-9 bg-[#3C50E0] rounded-lg flex items-center justify-center text-white">
-            <Wallet size={24} />
-          </div>
-          <span className="text-2xl font-bold text-white tracking-tight">MyFin</span>
-        </div>
-
-        <nav className="flex-1 px-6 space-y-1">
-          <p className="text-xs font-semibold text-[#8A99AF] mb-4 px-3 uppercase tracking-widest">Menu</p>
-          <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} isDark />
-          <NavItem icon={<PieChartIcon size={18} />} label="Analyses" active={activeTab === 'analyses'} onClick={() => setActiveTab('analyses')} isDark />
-          <NavItem icon={<Clock size={18} />} label="Transactions" active={activeTab === 'history'} onClick={() => setActiveTab('history')} isDark />
-          
-          <div className="pt-10">
-            <p className="text-xs font-semibold text-[#8A99AF] mb-4 px-3 uppercase tracking-widest">Support</p>
-            <NavItem icon={<Settings size={18} />} label="Paramètres" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} isDark />
-          </div>
-        </nav>
-
-        <div className="p-6">
-          <div className="bg-[#24303F] rounded-sm p-4 text-center">
-            <p className="text-white text-xs font-bold mb-3">Besoin de plus d'exports ?</p>
-            <button className="w-full py-2 bg-[#3C50E0] text-white text-xs font-bold rounded-sm hover:bg-opacity-90 transition-all uppercase tracking-tighter">Passer Premium</button>
-          </div>
-        </div>
-      </aside>
-
-      <main className="flex-1 overflow-y-auto">
-        {/* Top Header Bar */}
-        <header className="bg-white border-b border-slate-200 h-20 flex items-center justify-between px-8 sticky top-0 z-40">
-          <div className="relative flex-1 max-w-lg">
-            <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input type="text" placeholder="Type to search..." className="w-full pl-8 pr-4 py-2 text-sm outline-none" />
-          </div>
-          <div className="flex items-center gap-6">
-            <button className="relative text-slate-500">
-              <Bell size={22} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div className="flex items-center gap-3 border-l pl-6 border-slate-200">
-              <div className="text-right">
-                <p className="text-sm font-bold leading-none">Justin Doe</p>
-                <p className="text-xs text-slate-500 mt-1">Administrator</p>
-              </div>
-              <div className="w-11 h-11 rounded-full bg-slate-200 flex items-center justify-center font-bold">JD</div>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="page-container header-layout">
+          <div className="brand-block">
+            <div className="brand-icon">
+              <Wallet size={24} />
+            </div>
+            <div>
+              <p className="brand-kicker">MyFin</p>
+              <h1>Apercu financier personnel</h1>
+              <p className="header-copy">
+                Suivez vos imports, vos flux et vos operations recentes depuis vos fichiers bancaires.
+              </p>
             </div>
           </div>
-        </header>
 
-        <div className="max-w-7xl mx-auto p-8 space-y-8">
-          {activeTab === 'dashboard' ? (
-            <>
-              {/* Top Summary Widgets */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total Balance" amount={stats.balance} icon={<Wallet size={24} />} color="indigo" />
-                <StatCard title="Total Income" amount={stats.totalCredit} icon={<ArrowUpCircle size={24} />} color="emerald" />
-                <StatCard title="Total Expenses" amount={stats.totalDebit} icon={<ArrowDownCircle size={24} />} color="rose" />
+          <div className="header-actions">
+            <PeriodBadge firstDate={stats.firstDate} lastDate={stats.lastDate} />
+            <button type="button" className="secondary-button" onClick={() => setRefreshKey(key => key + 1)}>
+              Actualiser
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="page-container main-content">
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <section className="stats-grid">
+          <StatCard title="Solde estime" amount={stats.balance} icon={<Wallet size={22} />} tone="blue" />
+          <StatCard title="Revenus" amount={stats.totalCredit} icon={<ArrowUpCircle size={22} />} tone="green" />
+          <StatCard title="Depenses" amount={stats.totalDebit} icon={<ArrowDownCircle size={22} />} tone="red" />
+          <MetricCard
+            title="Transactions"
+            value={stats.count}
+            detail={`${formatCurrency(stats.averageDebit)} de depense moyenne`}
+            icon={<CircleDollarSign size={22} />}
+          />
+        </section>
+
+        <section className="dashboard-grid">
+          <article className="panel chart-panel">
+            <div className="panel-heading">
+              <div>
+                <h2>Flux de tresorerie</h2>
+                <p>Evolution estimee du solde a partir des operations importees.</p>
+              </div>
+              <span className="soft-badge">
+                <TrendingUp size={16} />
+                Toutes les donnees
+              </span>
+            </div>
+
+            <div className="chart-box">
+              {chartData ? (
+                <Line data={chartData} options={chartOptions} />
+              ) : (
+                <EmptyState
+                  icon={<FileSpreadsheet size={28} />}
+                  title="Aucune operation importee"
+                  description="Importez un fichier Excel pour afficher votre courbe de tresorerie."
+                />
+              )}
+            </div>
+          </article>
+
+          <aside className="side-column">
+            <FileUpload onImportSuccess={() => setRefreshKey(key => key + 1)} />
+
+            <article className="panel">
+              <div className="panel-heading compact">
+                <div>
+                  <h2>Depenses par categorie</h2>
+                  <p>Top categories detectees dans les imports.</p>
+                </div>
+                <Tags className="muted-icon" size={22} />
               </div>
 
-              <div className="grid grid-cols-12 gap-6">
-                {/* Main Graph Card */}
-                <div className="col-span-12 lg:col-span-8 bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-bold text-[#1C2434]">Cash Flow Overview</h3>
-                    <select className="text-sm font-medium text-slate-500 bg-slate-50 border-none rounded px-3 py-1 outline-none">
-                      <option>Last 30 days</option>
-                    </select>
-                  </div>
-                  <div className="h-[320px]">
-                    {chartData ? <Line data={chartData} options={chartOptions} /> : <div className="h-full flex items-center justify-center text-slate-300 italic">Données insuffisantes...</div>}
-                  </div>
+              {categoryBreakdown.length > 0 ? (
+                <div className="category-list">
+                  {categoryBreakdown.map((category, index) => (
+                    <CategoryMiniProgress key={category.label} {...category} index={index} />
+                  ))}
                 </div>
+              ) : (
+                <EmptyState
+                  compact
+                  icon={<Tags size={24} />}
+                  title="Pas encore de categories"
+                  description="Les categories apparaitront apres import et categorisation."
+                />
+              )}
+            </article>
+          </aside>
+        </section>
 
-                {/* Right Sidebar Components */}
-                <div className="col-span-12 lg:col-span-4 space-y-6">
-                  <FileUpload onImportSuccess={() => setRefreshKey(k => k + 1)} />
-                  <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
-                    <h3 className="font-bold text-[#1C2434] mb-6">Spending Analysis</h3>
-                    <div className="space-y-6">
-                      <CategoryMiniProgress label="Housing" percent={42} color="bg-[#3C50E0]" />
-                      <CategoryMiniProgress label="Food & Drinks" percent={28} color="bg-[#10B981]" />
-                      <CategoryMiniProgress label="Entertainment" percent={15} color="bg-[#F87171]" />
-                    </div>
-                  </div>
-                </div>
+        <section className="panel transactions-panel">
+          <div className="transactions-header">
+            <div>
+              <h2>Operations</h2>
+              <p>
+                {filteredTransactions.length} operation{filteredTransactions.length > 1 ? 's' : ''} affichee{filteredTransactions.length > 1 ? 's' : ''}.
+              </p>
+            </div>
+
+            <div className="table-tools">
+              <div className="search-field">
+                <Search size={18} />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                  placeholder="Rechercher une operation"
+                />
               </div>
 
-              {/* List of operations */}
-              <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-[#1C2434]">Recent Transactions</h3>
-                  <button className="px-4 py-2 bg-slate-100 rounded text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all flex items-center gap-2 uppercase">
-                    <ListFilter size={16} /> Filtrer
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr>
-                        <th className="table-header">Description</th>
-                        <th className="table-header">Date</th>
-                        <th className="table-header text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {recent.map((t) => (
-                        <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="table-cell font-medium text-[#1C2434]">{t.rawLabel}</td>
-                          <td className="table-cell text-xs font-semibold">
-                            {new Date(t.operationDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                          </td>
-                          <td className={`table-cell text-right font-bold ${t.direction === 'DEBIT' ? 'text-[#F87171]' : 'text-[#10B981]'}`}>
-                            {t.direction === 'DEBIT' ? '-' : '+'}{(t.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="segmented-control">
+                <FilterButton active={directionFilter === 'ALL'} onClick={() => setDirectionFilter('ALL')}>
+                  Tout
+                </FilterButton>
+                <FilterButton active={directionFilter === 'DEBIT'} onClick={() => setDirectionFilter('DEBIT')}>
+                  Depenses
+                </FilterButton>
+                <FilterButton active={directionFilter === 'CREDIT'} onClick={() => setDirectionFilter('CREDIT')}>
+                  Revenus
+                </FilterButton>
               </div>
-            </>
+            </div>
+          </div>
+
+          {filteredTransactions.length > 0 ? (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Operation</th>
+                    <th>Categorie</th>
+                    <th>Date</th>
+                    <th className="align-right">Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.slice(0, 50).map(transaction => (
+                    <tr key={transaction.id}>
+                      <td>
+                        <div className="transaction-label" title={transaction.rawLabel}>
+                          {transaction.cleanLabel || transaction.rawLabel}
+                        </div>
+                        {transaction.cleanLabel && transaction.cleanLabel !== transaction.rawLabel && (
+                          <div className="transaction-raw" title={transaction.rawLabel}>
+                            {transaction.rawLabel}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="category-pill">{transaction.category || 'Non categorise'}</span>
+                      </td>
+                      <td className="nowrap">{formatDate(transaction.operationDate)}</td>
+                      <td className={`amount-cell ${transaction.direction === 'DEBIT' ? 'is-debit' : 'is-credit'}`}>
+                        {transaction.direction === 'DEBIT' ? '-' : '+'}{formatCurrency(Number(transaction.amount || 0))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <div className="glass-card p-24 rounded-[3rem] text-center">
-              <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-300">
-                <LayoutDashboard size={40} />
-              </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-2">Section {activeTab}</h2>
-              <p className="text-slate-400 font-medium mb-8 text-lg">Cette partie de l'application MyFin arrive très prochainement.</p>
-              <button onClick={() => setActiveTab('dashboard')} className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:scale-105 transition-transform">Retour à l'accueil</button>
+            <div className="empty-table">
+              <EmptyState
+                icon={<SlidersHorizontal size={28} />}
+                title="Aucune operation ne correspond"
+                description="Modifiez la recherche ou le filtre pour retrouver vos transactions."
+              />
             </div>
           )}
-        </div>
+        </section>
       </main>
     </div>
   );
 }
 
-function NavItem({ icon, label, active = false, onClick }) {
+function FilterButton({ active, onClick, children }) {
   return (
-    <button onClick={onClick} className={`sidebar-item w-full ${active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'}`}>
-      {icon} <span>{label}</span>
+    <button type="button" className={active ? 'active' : ''} onClick={onClick}>
+      {children}
     </button>
   );
 }
 
-function CategoryMiniProgress({ label, percent, color }) {
+function CategoryMiniProgress({ label, percent, amount, index }) {
+  const className = `category-bar-fill tone-${index + 1}`;
+
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
-        <span className="text-[#637381]">{label}</span>
-        <span className="text-[#1C2434]">{percent}%</span>
+    <div className="category-row">
+      <div className="category-row-top">
+        <span>{label}</span>
+        <strong>{formatCurrency(amount)}</strong>
       </div>
-      <div className="h-2 w-full bg-[#F1F5F9] rounded-sm overflow-hidden">
-        <div className={`h-full ${color} rounded-full`} style={{ width: `${percent}%` }}></div>
+      <div className="category-row-bottom">
+        <div className="category-bar">
+          <div className={className} style={{ width: `${percent}%` }} />
+        </div>
+        <span>{percent}%</span>
       </div>
     </div>
   );
 }
 
-function StatCard({ title, amount, icon, color }) {
+function StatCard({ title, amount, icon, tone }) {
   return (
-    <div className="bg-white border border-slate-200 p-6 shadow-sm flex items-center gap-5 rounded-sm">
-      <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#F1F5F9] text-[#3C50E0]">
-        {icon}
-      </div>
-      <div>
-        <h4 className="text-2xl font-bold text-[#1C2434] leading-none mb-1">{amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</h4>
-        <p className="text-xs font-semibold text-[#637381] uppercase tracking-wider">{title}</p>
-      </div>
+    <article className="stat-card">
+      <div className={`stat-icon tone-${tone}`}>{icon}</div>
+      <p>{title}</p>
+      <strong>{formatCurrency(amount)}</strong>
+    </article>
+  );
+}
+
+function MetricCard({ title, value, detail, icon }) {
+  return (
+    <article className="stat-card">
+      <div className="stat-icon tone-neutral">{icon}</div>
+      <p>{title}</p>
+      <strong>{value.toLocaleString('fr-FR')}</strong>
+      <span>{detail}</span>
+    </article>
+  );
+}
+
+function PeriodBadge({ firstDate, lastDate }) {
+  const label = firstDate && lastDate
+    ? `${formatDate(firstDate)} - ${formatDate(lastDate)}`
+    : 'Aucune periode importee';
+
+  return (
+    <div className="period-badge">
+      <CalendarDays size={17} />
+      {label}
     </div>
   );
+}
+
+function EmptyState({ icon, title, description, compact = false }) {
+  return (
+    <div className={`empty-state ${compact ? 'compact' : ''}`}>
+      <div className="empty-icon">{icon}</div>
+      <p>{title}</p>
+      <span>{description}</span>
+    </div>
+  );
+}
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+  });
+}
+
+function formatCompactCurrency(value) {
+  return Number(value || 0).toLocaleString('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  });
+}
+
+function formatDate(value) {
+  if (!value) return 'Date inconnue';
+
+  return new Date(value).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }

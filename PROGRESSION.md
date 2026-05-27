@@ -52,9 +52,24 @@ http://localhost:8080/hello - ok
 - [X] Relier le frontend à l’API (Afficher les transactions).
 - [ ] Faire un point sur la suite (Bilan).
 
+### Jour 8
+- [X] Analyser l'UX du dashboard existant.
+- [X] Identifier les éléments fictifs ou génériques à supprimer du front.
+- [X] Refaire le dashboard en une page plus claire et orientée finances personnelles.
+- [X] Ajouter les cartes de synthèse : solde estimé, revenus, dépenses, nombre de transactions.
+- [X] Améliorer le graphique de flux de trésorerie.
+- [X] Ajouter l'analyse des dépenses par catégorie à partir des transactions importées.
+- [X] Ajouter une recherche et des filtres locaux sur les opérations.
+- [X] Refaire le composant d'import Excel avec une zone drag & drop, message de succès et erreurs lisibles.
+- [X] Corriger le problème de rendu CSS : Tailwind n'était pas compilé/installé, remplacement par un CSS classique autonome.
+- [X] Vérifier le frontend avec `npm run build`.
+- [X] Vérifier le frontend avec `npm run lint`.
+
 ## Blocages
 
-- Aucun pour le moment.
+- PowerShell peut bloquer `npm run dev` avec une erreur `npm.ps1` si l'exécution de scripts est désactivée.
+- Solution rapide : lancer le frontend avec `npm.cmd run dev` depuis `frontend/`.
+- Alternative durable : autoriser les scripts utilisateur avec `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`.
 
 ## Décisions prises
 
@@ -62,8 +77,11 @@ http://localhost:8080/hello - ok
 - Première version uniquement basée sur Excel (.xlsx).
 - Stack de départ : Java, Spring Boot, PostgreSQL, React.
 - Développement local sans hébergement.
+- Le front ne dépend plus de Tailwind pour son rendu principal afin d'éviter un affichage brut si Tailwind n'est pas installé ou compilé.
 
 ## Notes
 
 - Objectif principal : apprendre en construisant.
 - Objectif secondaire : produire un portfolio propre.
+- Le dashboard reste volontairement centré sur les données réellement disponibles dans l'API actuelle.
+- Les statistiques plus avancées pourront ensuite être déplacées côté backend quand les endpoints dédiés seront créés.
