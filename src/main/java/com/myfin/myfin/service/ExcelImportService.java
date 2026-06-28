@@ -1,5 +1,6 @@
 package com.myfin.myfin.service;
 
+import com.myfin.myfin.entity.Category;
 import com.myfin.myfin.entity.Transaction;
 import com.myfin.myfin.entity.TransactionDirection;
 import com.myfin.myfin.repository.TransactionRepository;
@@ -21,13 +22,16 @@ import java.util.List;
 public class ExcelImportService {
 
     private final TransactionRepository transactionRepository;
+    private final CategorizationService categorizationService;
 
-    public ExcelImportService(TransactionRepository transactionRepository) {
+    public ExcelImportService(TransactionRepository transactionRepository, CategorizationService categorizationService) {
         this.transactionRepository = transactionRepository;
+        this.categorizationService = categorizationService;
     }
 
     public List<Transaction> importExcel(MultipartFile file) throws Exception {
         List<Transaction> transactions = new ArrayList<>();
+        List<Category> categories = categorizationService.getAllCategories();
 
         try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -107,6 +111,7 @@ public class ExcelImportService {
                         transaction.setCleanLabel(label);
                         transaction.setAmount(amount);
                         transaction.setDirection(direction);
+                        transaction.setCategory(categorizationService.categorize(label, categories));
                         transaction.setSourceFile(file.getOriginalFilename());
                         
                         applyStyleToRow(currentRow, successStyle);

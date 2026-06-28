@@ -2,6 +2,7 @@ package com.myfin.myfin.controller;
 
 import com.myfin.myfin.entity.Transaction;
 import com.myfin.myfin.repository.TransactionRepository;
+import com.myfin.myfin.service.CategorizationService;
 import com.myfin.myfin.service.ExcelImportService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +19,12 @@ public class TransactionController {
 
     private final TransactionRepository transactionRepository;
     private final ExcelImportService excelImportService;
+    private final CategorizationService categorizationService;
 
-    public TransactionController(TransactionRepository transactionRepository, ExcelImportService excelImportService) {
+    public TransactionController(TransactionRepository transactionRepository, ExcelImportService excelImportService, CategorizationService categorizationService) {
         this.transactionRepository = transactionRepository;
         this.excelImportService = excelImportService;
+        this.categorizationService = categorizationService;
     }
 
     @GetMapping
@@ -45,5 +48,14 @@ public class TransactionController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Erreur lors de l'import Excel : " + e.getMessage()));
         }
+    }
+
+    @PatchMapping("/recategorize")
+    public ResponseEntity<Map<String, Object>> recategorize() {
+        List<Transaction> all = transactionRepository.findAll();
+        var categories = categorizationService.getAllCategories();
+        all.forEach(t -> t.setCategory(categorizationService.categorize(t.getRawLabel(), categories)));
+        transactionRepository.saveAll(all);
+        return ResponseEntity.ok(Map.of("count", all.size()));
     }
 }

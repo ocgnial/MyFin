@@ -1,6 +1,7 @@
 HELP.md
 HISTORIQUE.md
 ficTest.xlsx
+~$ficTest.xlsx
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -34,3 +35,5 @@ build/
 ### VS Code ###
 .vscode/
 .env
+
+start.ps1

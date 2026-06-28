@@ -43,9 +43,11 @@ http://localhost:8080/hello - ok
 - [X] Vérifier l’import complet.
 
 ### Jour 6
-- [ ] Créer les premières statistiques.
-- [ ] Calculer les dépenses par catégorie.
-- [ ] Calculer les dépenses mensuelles.
+- [X] Implémenter la catégorisation automatique des transactions à l'import.
+- [X] Créer `CategorizationService` avec 10 catégories et ~50 mots-clés banque française.
+- [X] Injecter le service dans `ExcelImportService` — 1 ligne ajoutée à la création de chaque transaction.
+- [X] Le dashboard affiche maintenant les vraies catégories dans le bloc "Dépenses par catégorie".
+- [ ] Endpoints dédiés pour les statistiques (dépenses par catégorie, dépenses mensuelles) — à faire côté backend.
 
 ### Jour 7
 - [X] Créer une première page dashboard (Frontend).
